@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PortableStream — Админ-панель</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="keyGate" class="gate">
+    <div class="gate-box">
+      <h1>PortableStream</h1>
+      <p>Введите ключ администратора (ADMIN_API_KEY на сервере)</p>
+      <input id="keyInput" type="password" placeholder="Admin key" autocomplete="off">
+      <button id="keySubmit">Войти</button>
+      <p id="keyError" class="error"></p>
+    </div>
+  </div>
+
+  <div id="app" class="app hidden">
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <h2>Компьютеры</h2>
+        <span id="connStatus" class="conn-status offline">offline</span>
+      </div>
+      <ul id="clientList" class="client-list"></ul>
+    </aside>
+
+    <main class="main">
+      <div id="emptyState" class="empty-state">
+        Выберите компьютер слева
+      </div>
+
+      <div id="clientView" class="client-view hidden">
+        <header class="client-header">
+          <h2 id="clientTitle">—</h2>
+          <span id="clientSub" class="muted"></span>
+        </header>
+
+        <section class="screenshot-panel">
+          <div class="screenshot-box">
+            <img id="screenshotImg" alt="Нет скриншотов">
+            <div id="screenshotPlaceholder" class="screenshot-placeholder">Скриншотов пока нет</div>
+          </div>
+          <ul id="screenshotThumbs" class="thumbs"></ul>
+        </section>
+
+        <section class="chat-panel">
+          <ul id="messageList" class="message-list"></ul>
+          <form id="replyForm" class="reply-form">
+            <textarea id="replyText" placeholder="Ответ пользователю..." rows="2"></textarea>
+            <button type="submit">Отправить</button>
+          </form>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

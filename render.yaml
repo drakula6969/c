@@ -1,0 +1,29 @@
+services:
+  - type: web
+    name: portablestream-server
+    env: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /healthz
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11.9"
+      - key: ENROLLMENT_KEY
+        sync: false
+      - key: ADMIN_API_KEY
+        sync: false
+      - key: ONLINE_THRESHOLD_SECONDS
+        value: "90"
+      # Раскомментируйте, если подключаете Render Postgres:
+      # - key: DATABASE_URL
+      #   fromDatabase:
+      #     name: portablestream-db
+      #     property: connectionString
+
+# Опционально: бесплатная Postgres-база Render (90 дней, затем нужно
+# пересоздавать или переходить на платный план). Для учебного проекта
+# обычно достаточно SQLite по умолчанию.
+# databases:
+#   - name: portablestream-db
+#     plan: free
