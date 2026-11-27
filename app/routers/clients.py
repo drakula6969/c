@@ -16,7 +16,12 @@ router = APIRouter(tags=["clients"])
 def _is_online(client: Client) -> bool:
     if client.last_seen is None:
         return False
-    delta = datetime.now(timezone.utc) - client.last_seen
+    last_seen = client.last_seen
+    # Страховка для старых строк в SQLite: там время могло сохраниться
+    # без часового пояса. Считаем такое время UTC, а не локальным.
+    if last_seen.tzinfo is None:
+        last_seen = last_seen.replace(tzinfo=timezone.utc)
+    delta = datetime.now(timezone.utc) - last_seen
     return delta.total_seconds() <= config.ONLINE_THRESHOLD_SECONDS
 
 

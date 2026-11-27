@@ -60,9 +60,14 @@ function renderClientList() {
   for (const c of items) {
     const li = document.createElement("li");
     li.className = "client-item" + (c.id === state.selectedId ? " active" : "");
+    // Имя компьютера приходит от клиента, поэтому экранируем его перед
+    // вставкой через innerHTML (иначе возможна stored XSS в админ-панели).
+    const label = c.name
+      ? `${escapeHtml(c.code)} · ${escapeHtml(c.name)}`
+      : escapeHtml(c.code);
     li.innerHTML = `
       <span><span class="dot ${c.online ? "online" : ""}"></span>
-      <span class="name">${c.name ? `${c.code} · ${c.name}` : c.code}</span></span>
+      <span class="name">${label}</span></span>
       <span class="time">${c.online ? "online" : formatTime(c.last_seen)}</span>
     `;
     li.addEventListener("click", () => selectClient(c.id));
