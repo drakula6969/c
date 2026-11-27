@@ -24,16 +24,10 @@ class ClientOut(BaseModel):
     last_seen: Optional[datetime]
     registered_at: datetime
 
-    class Config:
-        from_attributes = True
-
 
 class ScreenshotOut(BaseModel):
     id: int
     created_at: datetime
-
-    class Config:
-        from_attributes = True
 
 
 class MessageOut(BaseModel):
@@ -41,9 +35,6 @@ class MessageOut(BaseModel):
     sender: str
     text: str
     created_at: datetime
-
-    class Config:
-        from_attributes = True
 
 
 class SendMessageRequest(BaseModel):

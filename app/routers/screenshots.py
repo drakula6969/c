@@ -2,13 +2,11 @@ from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, status
 from fastapi.responses import FileResponse
-from sqlalchemy.orm import Session
 
 from .. import config
 from ..auth import get_current_client, require_admin
-from ..database import get_db
-from ..models import Client, Screenshot
 from ..schemas import ScreenshotOut
+from ..store import Client, store
 from ..ws_manager import manager
 
 router = APIRouter(tags=["screenshots"])
@@ -20,7 +18,6 @@ ALLOWED_CONTENT_TYPES = {"image/jpeg", "image/png"}
 async def upload_screenshot(
     file: UploadFile,
     client: Client = Depends(get_current_client),
-    db: Session = Depends(get_db),
 ):
     if file.content_type not in ALLOWED_CONTENT_TYPES:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Only JPEG/PNG screenshots are accepted")
@@ -37,11 +34,8 @@ async def upload_screenshot(
     filename = f"{now.strftime('%Y%m%d_%H%M%S_%f')}.{ext}"
     (client_dir / filename).write_bytes(data)
 
-    shot = Screenshot(client_id=client.id, filename=filename, created_at=now)
-    db.add(shot)
-    client.last_seen = now
-    db.commit()
-    db.refresh(shot)
+    shot = store.add_screenshot(client_id=client.id, filename=filename, created_at=now)
+    store.touch(client.id)
 
     await manager.broadcast_admin(
         {
@@ -52,30 +46,26 @@ async def upload_screenshot(
         }
     )
 
-    return ScreenshotOut.model_validate(shot)
+    return ScreenshotOut(id=shot.id, created_at=shot.created_at)
 
 
 @router.get("/admin/clients/{client_id}/screenshots", response_model=list[ScreenshotOut])
-def list_screenshots(
-    client_id: int, _: bool = Depends(require_admin), db: Session = Depends(get_db)
-):
-    shots = (
-        db.query(Screenshot)
-        .filter(Screenshot.client_id == client_id)
-        .order_by(Screenshot.created_at.desc())
-        .all()
-    )
-    return [ScreenshotOut.model_validate(s) for s in shots]
+def list_screenshots(client_id: int, _: bool = Depends(require_admin)):
+    return [
+        ScreenshotOut(id=s.id, created_at=s.created_at)
+        for s in store.list_screenshots(client_id)
+    ]
 
 
 @router.get("/admin/screenshots/{screenshot_id}/file")
-def get_screenshot_file(
-    screenshot_id: int, _: bool = Depends(require_admin), db: Session = Depends(get_db)
-):
-    shot = db.query(Screenshot).filter(Screenshot.id == screenshot_id).first()
+def get_screenshot_file(screenshot_id: int, _: bool = Depends(require_admin)):
+    shot = store.get_screenshot(screenshot_id)
     if shot is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Not found")
-    path = config.STORAGE_DIR / shot.client.code / shot.filename
+    client = store.get_client(shot.client_id)
+    if client is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Not found")
+    path = config.STORAGE_DIR / client.code / shot.filename
     if not path.exists():
         raise HTTPException(status.HTTP_404_NOT_FOUND, "File missing on disk")
     media_type = "image/jpeg" if path.suffix == ".jpg" else "image/png"

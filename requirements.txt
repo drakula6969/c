@@ -1,7 +1,3 @@
 fastapi>=0.110,<0.120
 uvicorn[standard]>=0.30,<0.40
-sqlalchemy>=2.0,<2.1
 python-multipart>=0.0.9
-
-# Если подключаете Render Postgres вместо SQLite — раскомментируйте:
-# psycopg2-binary>=2.9,<3.0

@@ -1,12 +1,10 @@
 import secrets
 from typing import Optional
 
-from fastapi import Depends, Header, HTTPException, status
-from sqlalchemy.orm import Session
+from fastapi import Header, HTTPException, status
 
 from . import config
-from .database import get_db
-from .models import Client
+from .store import Client, store
 
 
 def _extract_bearer(authorization: Optional[str]) -> str:
@@ -26,11 +24,9 @@ def require_admin(authorization: str = Header(None)) -> bool:
     return True
 
 
-def get_current_client(
-    authorization: str = Header(None), db: Session = Depends(get_db)
-) -> Client:
+def get_current_client(authorization: str = Header(None)) -> Client:
     token = _extract_bearer(authorization)
-    client = db.query(Client).filter(Client.token == token).first()
+    client = store.get_by_token(token)
     if client is None:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN, detail="Invalid client token"

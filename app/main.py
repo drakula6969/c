@@ -5,7 +5,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from . import config
-from .database import Base, engine
 from .routers import clients, messages, screenshots, ws
 
 app = FastAPI(title="PortableStream Server", version="1.0.0")
@@ -20,8 +19,9 @@ app.add_middleware(
 
 @app.on_event("startup")
 def on_startup() -> None:
+    # Базы данных нет — данные живут в памяти (app/store.py).
+    # При старте нужна только папка под файлы скриншотов.
     config.STORAGE_DIR.mkdir(parents=True, exist_ok=True)
-    Base.metadata.create_all(bind=engine)
 
 
 app.include_router(clients.router, prefix="/api")
