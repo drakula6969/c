@@ -3,59 +3,93 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>PortableStream — Админ-панель</title>
+<meta name="theme-color" content="#0a1020">
+<title>PortableStream — рабочее место оператора</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <div id="keyGate" class="gate">
-    <div class="gate-box">
-      <h1>PortableStream</h1>
-      <p>Введите ключ администратора (ADMIN_API_KEY на сервере)</p>
-      <input id="keyInput" type="password" placeholder="Admin key" autocomplete="off">
-      <button id="keySubmit">Войти</button>
-      <p id="keyError" class="error"></p>
-    </div>
+    <form id="keyForm" class="gate-card">
+      <div class="brand-mark">P</div>
+      <p class="eyebrow">PORTABLESTREAM · OPERATOR</p>
+      <h1>Вход в панель</h1>
+      <p class="gate-copy">Введите ключ администратора, заданный на сервере.</p>
+      <label for="keyInput">Ключ доступа</label>
+      <input id="keyInput" type="password" placeholder="ADMIN_API_KEY" autocomplete="current-password" required>
+      <button id="keySubmit" type="submit">Войти в панель <span aria-hidden="true">→</span></button>
+      <p id="keyError" class="error" role="alert"></p>
+    </form>
   </div>
 
   <div id="app" class="app hidden">
     <aside class="sidebar">
-      <div class="sidebar-header">
-        <h2>Компьютеры</h2>
-        <span id="connStatus" class="conn-status offline">offline</span>
+      <div class="sidebar-brand">
+        <div class="brand-mark small">P</div>
+        <div><strong>PortableStream</strong><span>рабочее место оператора</span></div>
       </div>
+      <div class="client-heading">
+        <div><p class="eyebrow">УСТРОЙСТВА</p><h2>Компьютеры</h2></div>
+        <span id="onlineCount" class="count-pill">0 онлайн</span>
+      </div>
+      <label class="search-box"><span aria-hidden="true">⌕</span><input id="clientSearch" type="search" placeholder="Найти компьютер…" autocomplete="off"></label>
       <ul id="clientList" class="client-list"></ul>
+      <div class="sidebar-footer"><span id="connDot" class="conn-dot offline"></span><span id="connStatus">Подключение…</span></div>
     </aside>
 
     <main class="main">
       <div id="emptyState" class="empty-state">
-        Выберите компьютер слева
+        <div class="empty-art" aria-hidden="true"><span>▣</span><i></i></div>
+        <p class="eyebrow">НАЧНИТЕ РАБОТУ</p>
+        <h1>Выберите компьютер</h1>
+        <p>Скриншоты и переписка появятся здесь.<br>Выберите устройство в списке слева.</p>
       </div>
 
-      <div id="clientView" class="client-view hidden">
+      <section id="clientView" class="client-view hidden">
         <header class="client-header">
-          <h2 id="clientTitle">—</h2>
-          <span id="clientSub" class="muted"></span>
+          <div class="client-title-wrap"><span class="device-icon" aria-hidden="true">▣</span><div><p class="eyebrow">УСТРОЙСТВО</p><h1 id="clientTitle">—</h1></div></div>
+          <div class="client-presence"><span id="presenceDot" class="presence-dot"></span><span id="clientSub">—</span></div>
         </header>
 
-        <section class="screenshot-panel">
-          <div class="screenshot-box">
-            <img id="screenshotImg" alt="Нет скриншотов">
-            <div id="screenshotPlaceholder" class="screenshot-placeholder">Скриншотов пока нет</div>
-          </div>
-          <ul id="screenshotThumbs" class="thumbs"></ul>
-        </section>
+        <div class="work-grid">
+          <section class="screen-card">
+            <div class="section-heading">
+              <div><p class="eyebrow">ЭКРАН УСТРОЙСТВА</p><h2>Скриншоты <span id="shotCount" class="subtle-count"></span></h2></div>
+              <div class="screen-actions">
+                <button id="refreshShots" class="icon-button" type="button" title="Обновить скриншоты" aria-label="Обновить скриншоты">↻</button>
+                <button id="expandShot" class="icon-button" type="button" title="Развернуть скриншот" aria-label="Развернуть скриншот" disabled>⛶</button>
+              </div>
+            </div>
+            <div id="screenshotBox" class="screenshot-box">
+              <img id="screenshotImg" alt="Скриншот выбранного компьютера" class="hidden">
+              <div id="screenshotPlaceholder" class="screenshot-placeholder"><span class="placeholder-icon">▧</span><strong>Пока нет скриншотов</strong><span>Когда клиент отправит снимок экрана, он появится здесь.</span></div>
+              <div id="shotLoading" class="shot-loading hidden"><span class="spinner"></span>Загружаю скриншот…</div>
+            </div>
+            <div class="shot-caption"><span id="shotTimestamp">Выберите снимок из ленты</span><a id="downloadShot" class="text-link hidden" download="portablestream-screenshot.jpg">Скачать оригинал ↓</a></div>
+            <div class="filmstrip-heading"><span>Лента снимков</span><span class="muted">Нажмите, чтобы открыть</span></div>
+            <ul id="screenshotThumbs" class="thumbs" aria-label="Список скриншотов"></ul>
+          </section>
 
-        <section class="chat-panel">
-          <ul id="messageList" class="message-list"></ul>
-          <form id="replyForm" class="reply-form">
-            <textarea id="replyText" placeholder="Ответ пользователю..." rows="2"></textarea>
-            <button type="submit">Отправить</button>
-          </form>
-        </section>
-      </div>
+          <section class="chat-card">
+            <div class="section-heading chat-heading">
+              <div><p class="eyebrow">ОБРАТНАЯ СВЯЗЬ</p><h2>Сообщения</h2></div>
+              <span class="live-label"><i></i> Ответы клиенту</span>
+            </div>
+            <div class="chat-guidance"><span class="guidance-icon" aria-hidden="true">↗</span><span>Напишите, что нужно исправить или проверить. Ответ появится у пользователя на экране.</span></div>
+            <ul id="messageList" class="message-list" aria-live="polite"></ul>
+            <form id="replyForm" class="reply-form">
+              <label for="replyText">Ваш ответ</label>
+              <textarea id="replyText" placeholder="Напишите сообщение пользователю…" rows="3" maxlength="4000"></textarea>
+              <div class="composer-footer"><span class="muted">Enter — отправить · Shift + Enter — новая строка</span><button id="sendReply" type="submit"><span>Отправить ответ</span><b aria-hidden="true">↑</b></button></div>
+            </form>
+            <p id="sendStatus" class="send-status" aria-live="polite"></p>
+          </section>
+        </div>
+      </section>
     </main>
   </div>
 
+  <dialog id="imageDialog" class="image-dialog"><button id="closeDialog" class="dialog-close" type="button" aria-label="Закрыть">×</button><img id="dialogImage" alt="Полноразмерный скриншот"><p id="dialogCaption"></p></dialog>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
   <script src="app.js"></script>
 </body>
 </html>
