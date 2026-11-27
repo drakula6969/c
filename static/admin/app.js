@@ -164,11 +164,16 @@ async function loadScreenshots(clientId, forceLatest = false) {
 
   if (!shots.length) {
     state.selectedShotId = null;
+    if (state.objectUrl) { URL.revokeObjectURL(state.objectUrl); state.objectUrl = null; }
+    el("screenshotImg").removeAttribute("src");
     el("screenshotImg").classList.add("hidden");
     el("screenshotPlaceholder").classList.remove("hidden");
     el("shotTimestamp").textContent = "Скриншот появится здесь после отправки с компьютера";
     el("downloadShot").classList.add("hidden");
     el("expandShot").disabled = true;
+    el("deleteShot").disabled = true;
+    el("replyToShot").disabled = true;
+    el("replyContext").classList.add("hidden");
     return;
   }
 
@@ -195,6 +200,9 @@ async function loadScreenshots(clientId, forceLatest = false) {
 async function showScreenshot(shot, activeButton) {
   state.selectedShotId = shot.id;
   [...el("screenshotThumbs").children].forEach((node) => node.classList.toggle("active", node === activeButton));
+  el("deleteShot").disabled = true;
+  el("replyToShot").disabled = true;
+  el("replyContext").classList.add("hidden");
   el("shotLoading").classList.remove("hidden");
   el("screenshotPlaceholder").classList.add("hidden");
   try {
@@ -217,6 +225,10 @@ async function showScreenshot(shot, activeButton) {
     download.href = state.objectUrl;
     download.classList.remove("hidden");
     el("expandShot").disabled = false;
+    el("deleteShot").disabled = false;
+    el("replyToShot").disabled = false;
+    el("replyShotTime").textContent = formatDate(shot.created_at);
+    el("replyContext").classList.remove("hidden");
   } catch (error) {
     showToast(error.message, "error");
   } finally {
@@ -231,6 +243,28 @@ async function refreshCurrentShots() {
 }
 
 el("refreshShots").addEventListener("click", refreshCurrentShots);
+el("replyToShot").addEventListener("click", () => {
+  if (!state.selectedShotId) return;
+  el("replyText").focus();
+  el("sendStatus").className = "send-status";
+  el("sendStatus").textContent = `Ответ будет отправлен пользователю ${el("clientTitle").textContent} по выбранному скриншоту.`;
+});
+el("deleteShot").addEventListener("click", async () => {
+  const shotId = state.selectedShotId;
+  if (!shotId) return;
+  if (!confirm(`Удалить выбранный скриншот (${el("shotTimestamp").textContent})? Это действие нельзя отменить.`)) return;
+  const button = el("deleteShot");
+  button.disabled = true;
+  try {
+    await api(`/api/admin/screenshots/${shotId}`, { method: "DELETE" });
+    state.selectedShotId = null;
+    showToast("Скриншот удалён.");
+    await loadScreenshots(state.selectedId, true);
+  } catch (error) {
+    button.disabled = false;
+    showToast(`Не удалось удалить скриншот: ${error.message}`, "error");
+  }
+});
 el("screenshotImg").addEventListener("click", () => openImageDialog());
 el("expandShot").addEventListener("click", () => openImageDialog());
 function openImageDialog() {
@@ -280,7 +314,7 @@ el("replyForm").addEventListener("submit", async (event) => {
   el("sendStatus").className = "send-status";
   el("sendStatus").textContent = "Отправляю ответ…";
   try {
-    await api(`/api/admin/clients/${clientId}/messages`, {
+    const sendResult = await api(`/api/admin/clients/${clientId}/messages`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ text }),
@@ -289,9 +323,17 @@ el("replyForm").addEventListener("submit", async (event) => {
     await loadMessages(clientId);
     const online = Boolean(state.clients.get(clientId)?.online);
     el("sendStatus").className = "send-status success";
-    el("sendStatus").textContent = online
-      ? "Ответ отправлен. Он появится на компьютере пользователя автоматически."
-      : "Ответ сохранён. Пользователь увидит его, когда клиент снова подключится.";
+    if (sendResult && sendResult.delivered === true) {
+      el("sendStatus").textContent = "Ответ дошёл до клиента по активному соединению.";
+    } else if (sendResult && sendResult.delivered === false) {
+      el("sendStatus").textContent = online
+        ? "Ответ сохранён. Прямой канал недоступен — клиент заберёт его через резервную проверку."
+        : "Ответ сохранён, но компьютер офлайн. Он получит его после подключения.";
+    } else {
+      el("sendStatus").textContent = online
+        ? "Ответ отправлен. Клиент проверит сообщение автоматически."
+        : "Ответ сохранён. Клиент получит его при следующем подключении.";
+    }
     el("replyText").focus();
   } catch (error) {
     el("sendStatus").className = "send-status error";

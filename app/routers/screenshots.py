@@ -1,5 +1,4 @@
 from datetime import datetime, timezone
-
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, status
 from fastapi.responses import FileResponse
 
@@ -51,6 +50,8 @@ async def upload_screenshot(
 
 @router.get("/admin/clients/{client_id}/screenshots", response_model=list[ScreenshotOut])
 def list_screenshots(client_id: int, _: bool = Depends(require_admin)):
+    if store.get_client(client_id) is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Client not found")
     return [
         ScreenshotOut(id=s.id, created_at=s.created_at)
         for s in store.list_screenshots(client_id)
@@ -65,8 +66,34 @@ def get_screenshot_file(screenshot_id: int, _: bool = Depends(require_admin)):
     client = store.get_client(shot.client_id)
     if client is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Not found")
-    path = config.STORAGE_DIR / client.code / shot.filename
-    if not path.exists():
+    path = (config.STORAGE_DIR / client.code / shot.filename).resolve()
+    client_dir = (config.STORAGE_DIR / client.code).resolve()
+    if path.parent != client_dir or not path.is_file():
         raise HTTPException(status.HTTP_404_NOT_FOUND, "File missing on disk")
-    media_type = "image/jpeg" if path.suffix == ".jpg" else "image/png"
+    media_type = "image/jpeg" if path.suffix.lower() == ".jpg" else "image/png"
     return FileResponse(path, media_type=media_type)
+
+
+@router.delete("/admin/screenshots/{screenshot_id}")
+def delete_screenshot(screenshot_id: int, _: bool = Depends(require_admin)):
+    shot = store.get_screenshot(screenshot_id)
+    if shot is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Screenshot not found")
+    client = store.get_client(shot.client_id)
+    if client is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Client not found")
+
+    image_path = (config.STORAGE_DIR / client.code / shot.filename).resolve()
+    client_dir = (config.STORAGE_DIR / client.code).resolve()
+    if image_path.parent != client_dir:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Invalid screenshot path")
+
+    deleted = store.delete_screenshot(screenshot_id)
+    if deleted is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Screenshot not found")
+    try:
+        image_path.unlink(missing_ok=True)
+    except OSError as exc:
+        # Метаданные уже удалены, но сообщаем оператору, что файл остался.
+        raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, "Screenshot record deleted, but image file could not be removed") from exc
+    return {"status": "ok", "deleted_id": screenshot_id}

@@ -144,6 +144,11 @@ class Store:
         with self._lock:
             return self._screenshots.get(screenshot_id)
 
+    def delete_screenshot(self, screenshot_id: int) -> Optional[Screenshot]:
+        """Removes screenshot metadata and returns the removed record."""
+        with self._lock:
+            return self._screenshots.pop(screenshot_id, None)
+
     # ---------- Сообщения ----------
 
     def add_message(self, client_id: int, sender: str, text: str) -> Message:

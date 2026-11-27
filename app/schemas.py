@@ -37,6 +37,12 @@ class MessageOut(BaseModel):
     created_at: datetime
 
 
+class SendMessageResponse(MessageOut):
+    # True means the active client WebSocket accepted the push. False means
+    # the message is stored and the client will fetch it through REST polling.
+    delivered: bool
+
+
 class SendMessageRequest(BaseModel):
     text: str = Field(..., min_length=1, max_length=4000)
 

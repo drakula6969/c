@@ -3,7 +3,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from ..auth import get_current_client, require_admin
-from ..schemas import MessageOut, SendMessageRequest
+from ..schemas import MessageOut, SendMessageRequest, SendMessageResponse
 from ..store import Client, store
 from ..ws_manager import manager
 
@@ -14,7 +14,7 @@ def _to_out(msg) -> MessageOut:
     return MessageOut(id=msg.id, sender=msg.sender, text=msg.text, created_at=msg.created_at)
 
 
-@router.post("/admin/clients/{client_id}/messages", response_model=MessageOut)
+@router.post("/admin/clients/{client_id}/messages", response_model=SendMessageResponse)
 async def send_message(
     client_id: int,
     payload: SendMessageRequest,
@@ -26,7 +26,7 @@ async def send_message(
 
     msg = store.add_message(client_id=client_id, sender="admin", text=payload.text)
 
-    await manager.send_to_client(
+    delivered = await manager.send_to_client(
         client_id,
         {
             "type": "reply",
@@ -36,7 +36,13 @@ async def send_message(
         },
     )
 
-    return _to_out(msg)
+    return SendMessageResponse(
+        id=msg.id,
+        sender=msg.sender,
+        text=msg.text,
+        created_at=msg.created_at,
+        delivered=delivered,
+    )
 
 
 @router.get("/admin/clients/{client_id}/messages", response_model=list[MessageOut])

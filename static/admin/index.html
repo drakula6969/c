@@ -55,6 +55,8 @@
             <div class="section-heading">
               <div><p class="eyebrow">ЭКРАН УСТРОЙСТВА</p><h2>Скриншоты <span id="shotCount" class="subtle-count"></span></h2></div>
               <div class="screen-actions">
+                <button id="replyToShot" class="shot-reply-button" type="button" disabled>↗ <span>Ответить по скриншоту</span></button>
+                <button id="deleteShot" class="delete-shot-button" type="button" disabled title="Удалить выбранный скриншот">⌫ <span>Удалить</span></button>
                 <button id="refreshShots" class="icon-button" type="button" title="Обновить скриншоты" aria-label="Обновить скриншоты">↻</button>
                 <button id="expandShot" class="icon-button" type="button" title="Развернуть скриншот" aria-label="Развернуть скриншот" disabled>⛶</button>
               </div>
@@ -74,7 +76,8 @@
               <div><p class="eyebrow">ОБРАТНАЯ СВЯЗЬ</p><h2>Сообщения</h2></div>
               <span class="live-label"><i></i> Ответы клиенту</span>
             </div>
-            <div class="chat-guidance"><span class="guidance-icon" aria-hidden="true">↗</span><span>Напишите, что нужно исправить или проверить. Ответ появится у пользователя на экране.</span></div>
+            <div class="chat-guidance"><span class="guidance-icon" aria-hidden="true">↗</span><span>Выберите скриншот слева, затем напишите, что нужно исправить или проверить. Ответ появится у пользователя на экране.</span></div>
+            <div id="replyContext" class="reply-context hidden">Ответ по скриншоту <strong id="replyShotTime">—</strong></div>
             <ul id="messageList" class="message-list" aria-live="polite"></ul>
             <form id="replyForm" class="reply-form">
               <label for="replyText">Ваш ответ</label>
