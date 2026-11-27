@@ -1,11 +1,7 @@
-from datetime import datetime, timezone
-
-from fastapi import APIRouter, Depends, Query, WebSocket, WebSocketDisconnect
-from sqlalchemy.orm import Session
+from fastapi import APIRouter, Query, WebSocket, WebSocketDisconnect
 
 from ..auth import check_admin_token
-from ..database import get_db
-from ..models import Client
+from ..store import store
 from ..ws_manager import manager
 
 router = APIRouter(tags=["websocket"])
@@ -28,23 +24,21 @@ async def ws_admin(websocket: WebSocket, token: str = Query(...)):
 
 
 @router.websocket("/ws/client")
-async def ws_client(websocket: WebSocket, token: str = Query(...), db: Session = Depends(get_db)):
-    client = db.query(Client).filter(Client.token == token).first()
+async def ws_client(websocket: WebSocket, token: str = Query(...)):
+    client = store.get_by_token(token)
     if client is None:
         await websocket.close(code=4403)
         return
 
     await manager.connect_client(client.id, websocket)
-    client.last_seen = datetime.now(timezone.utc)
-    db.commit()
+    store.touch(client.id)
     await manager.broadcast_admin({"type": "status", "client_id": client.id, "online": True})
 
     try:
         while True:
             # Клиент может слать {"type":"ping"} вместо/вместе с REST-heartbeat.
             await websocket.receive_text()
-            client.last_seen = datetime.now(timezone.utc)
-            db.commit()
+            store.touch(client.id)
     except WebSocketDisconnect:
         manager.disconnect_client(client.id)
         await manager.broadcast_admin({"type": "status", "client_id": client.id, "online": False})

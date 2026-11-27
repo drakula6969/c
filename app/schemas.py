@@ -24,16 +24,10 @@ class ClientOut(BaseModel):
     last_seen: Optional[datetime]
     registered_at: datetime
 
-    class Config:
-        from_attributes = True
-
 
 class ScreenshotOut(BaseModel):
     id: int
     created_at: datetime
-
-    class Config:
-        from_attributes = True
 
 
 class MessageOut(BaseModel):
@@ -42,8 +36,11 @@ class MessageOut(BaseModel):
     text: str
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+
+class SendMessageResponse(MessageOut):
+    # True means the active client WebSocket accepted the push. False means
+    # the message is stored and the client will fetch it through REST polling.
+    delivered: bool
 
 
 class SendMessageRequest(BaseModel):
